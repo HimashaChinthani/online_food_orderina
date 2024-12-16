@@ -79,7 +79,6 @@ public class AuthController {
 
         return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
     }
-
     @PostMapping("/signin")
     public ResponseEntity<AuthResponse> signing(@RequestBody LoginRequest req) {
         String username = req.getEmail();
@@ -99,12 +98,18 @@ public class AuthController {
         // Prepare response
         AuthResponse authResponse = new AuthResponse();
         try {
-            // Safely assign the role to the response, defaulting to USER if the role is invalid
-            authResponse.setRole(USER_ROLE.valueOf(roleName));
-        } catch (IllegalArgumentException e) {
-            // Handle case where the role doesn't match any enum
-            authResponse.setRole(USER_ROLE.ROLE_CUSTOMER); // Default role
-            throw new BadCredentialsException("Invalid role configuration.");
+            // Safely assign the role to the response by checking if it exists in the enum
+            USER_ROLE userRole = null;
+            try {
+                userRole = USER_ROLE.valueOf(roleName.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // If the role is not found in the enum, set a default role
+                userRole = USER_ROLE.ROLE_CUSTOMER; // Default role
+            }
+            authResponse.setRole(userRole);
+        } catch (Exception e) {
+            // Handle any unexpected issues
+            throw new BadCredentialsException("Invalid role configuration.", e);
         }
 
         authResponse.setJwt(jwt);
@@ -112,6 +117,7 @@ public class AuthController {
 
         return new ResponseEntity<>(authResponse, HttpStatus.OK);
     }
+
 
 
     private Authentication authenticate(String username, String password) {
